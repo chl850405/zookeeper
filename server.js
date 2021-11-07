@@ -4,14 +4,17 @@ const express = require('express');
 const { animals } = require('./data/animals');
 
 const PORT = process.env.PORT || 3001;
-
 const app = express();
 
+//serve static files creates route to subfiles in HTLM ie:CSS and JavaScript
+//express adds middleware
+app.use(express.static('public'));
 //parse incoming string or array data
+//express adds middleware
 app.use(express.urlencoded({extended: true}));
-
 //parse incoming JSON data
-app.use(express.json())
+//express adds middleware
+app.use(express.json());
 
 function filterByQuery(query, animalsArray) {
     let personalityTraitsArray = [];
@@ -66,6 +69,23 @@ function createNewAnimal(body, animalsArray) {
     //return finished code to post route for response
     return animal;
 }
+
+function validateAnimal(animal) {
+    if (!animal.name || typeof animal.name !== 'string') {
+        return false;
+    }
+    if (!animal.species || typeof species.name !== 'string') {
+        return false;
+    }
+    if (!animal.diet || typeof animal.diet !== 'string') {
+        return false;
+    }
+    if (!animal.personalityTraits || !Array.isArray(animal.personalityTraits)) {
+        return false;
+    }
+    return true;
+}
+
 app.get('/api/animals', (req, res) => {
     let results = animals;
     if (req.query) {
@@ -76,8 +96,12 @@ app.get('/api/animals', (req, res) => {
 
 app.get('/api/animals/:id', (req, res) => {
     const result = findById(req.params.id, animals);
+    if (result) {
     res.json(result);
-});  
+} else {
+    res.send(404);
+}
+});
 
 app.post('/api/animals', (req,res) => {
    //set id based on what the next index of the array will be
@@ -90,30 +114,27 @@ app.post('/api/animals', (req,res) => {
         const animal = createNewAnimal(req.body, animals);
         res.json(animal);
     }
-
     //add aminmal to json file and animals array in this function
     const animal = createNewAnimal(req.body,animals)
-
     res.json(animal);
 });
 
-function validateAnimal(animal) {
-    if (!animal.name || typeof animal.name !== 'string') {
-        return false
-    }
+//links front end html to back end continue to use http://localhost:3001 to view
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/index.html'));
+});
 
-    if (!animal.species || typeof species.name !== 'string') {
-        return false
-    }
+app.get('/animals', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/animals.html'))
+});
 
-    if (!animal.diet || typeof animal.diet !== 'string') {
-        return false
-    }
+app.get('/zookeepers', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/zookeepers.html'));
+});
 
-    if (!animal.personalityTraits || typeof animal.personalityTraits !== 'string') {
-        return false
-    }
-}
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/index.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`API server now on port ${PORT}!`);
